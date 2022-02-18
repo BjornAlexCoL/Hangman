@@ -1,5 +1,8 @@
 ﻿using System;
-using System.Text;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+//using System.Text;
 
 namespace Hangman
 {
@@ -7,9 +10,17 @@ namespace Hangman
     {
         static void Main(string[] args)
         {
-            string[] wordList = new string[] { "ANANAS", "AX", "SWIXWAX", "MISSISSIPI" };
-            Random rand = new Random();
-            string secretWord = wordList[rand.Next(0, wordList.Length)];
+            List<string> wordList = new List<string>();
+            do
+            {
+                GoHangman(wordList);
+            }
+            while (GetValidLetters("Do you want to play again? (y/n) ", "yYnN") == "Y");
+        }
+        private static void GoHangman(List<string> wordList)
+        {
+            List<string> guessedWord = new List<string>();
+            string secretWord = GetSecretWord(wordList);
             char[] displayWordCharArray = new string('_', secretWord.Length).ToCharArray();
             string guessedLetters = "";
             int guesses = 0;
@@ -20,22 +31,27 @@ namespace Hangman
             do
             {
                 DisplayHangman(guesses);
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
                 Console.WriteLine(displayWordCharArray);
-                Console.WriteLine("\nThis is guess number {0}", guesses + 1);
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+
+                DisplayGuessedLetters("\nThis is guess number ",$"{guesses + 1}", $"{guesses + 1}");
                 if (guessedLetters.Length > 0)
                 {
-                    Console.WriteLine("You have guessed on letters {0} ", guessedLetters);
+                    DisplayGuessedLetters("\nYou have guessed on letters ", guessedLetters, secretWord);
                 }
-                inpString = getValidLetters("Please, Input a Letter (A-Ö) or a Word");
-
-                Console.WriteLine(inpString);
-                validGuess = true;
+                DisplayGuessedWord(guessedWord);// Display guessed Word
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                inpString = GetValidLetters("Please, Input a Letter (A-Ö) or a Word",
+                                         "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ");
+                //Console.WriteLine(inpString);
+                validGuess = false;
                 if (inpString.Length == 1)
                 {
                     if (!guessedLetters.Contains(inpString))//Already guessed that letter
                     {
                         validGuess = true;
-                        guessedLetters += inpString + ",";
+                        guessedLetters += inpString;
                         for (int testLoop = 0; testLoop < secretWord.Length; testLoop++)//Loop to go through and compare the letter with letters in secret word
                         {
                             if (secretWord[testLoop] == inpString[0])//If letter is in secretword add it to the charray
@@ -49,24 +65,22 @@ namespace Hangman
                     }
                     else
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;//Already guessed message. Fix a delay.
-                        Console.WriteLine("You already guessed on that letter!");
+                        //Already guessed message. Fix a delay.
+                        MessageAndDelay("You already guessed on that letter!");
                         validGuess = false;
-                        Console.ResetColor();
                     }
                 }
                 else
                 {
-                    if (inpString == secretWord) //Yay you guessed the word.
+                    if (!guessedWord.Contains(inpString)) //Add the guessed word to the list.
                     {
-                        Console.WriteLine("Congratulation");
-                        validGuess = false; //don't count the guess
+                        guessedWord.Add(inpString);
                     }
-                    else
+
+                    if (inpString != secretWord) //Bad guess for the word.
                     {
-                        Console.ForegroundColor = ConsoleColor.Red; //Sorry failed guess
-                        Console.WriteLine("Sorry wrong word but it was a nice try!");
-                        Console.ResetColor();
+                        //Sorry failed guess
+                        MessageAndDelay("Sorry wrong word but it was a nice try!");
                         validGuess = true; //count the guess
                     }
                 }
@@ -74,20 +88,106 @@ namespace Hangman
                 {
                     guesses++;
                 }
-            } while ((secretWord != string.Concat(displayWordCharArray)) && guesses <= 10);//End when displayWordCharArray is all letters and equal with secret word or guesses reached 10.
+            } while ((secretWord != string.Concat(displayWordCharArray)) && guesses < 10);//End when displayWordCharArray is all letters and equal with secret word or guesses reached 10.
+            DisplayWinLoss(guesses); //Show the result of the game
+            SaveGuessedWordsToWordlist(guessedWord, wordList); // Give option to add words.
+
         }
 
-        private static string getValidLetters(string message)
+        private static void DisplayGuessedLetters(string v, string guessedLetters, string secretWord)
+        {
+            if (guessedLetters.Length > 0)
+            {
+                Console.Write(v);
+                foreach (char letter in guessedLetters)
+                {
+                    Console.ForegroundColor = secretWord.Contains(letter) ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed;
+                    Console.Write(letter);
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.Write(",");
+                }
+            }
+        }
+        private static void MessageAndDelay(string v)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine("\n{0}", v);
+            Thread.Sleep(3000);
+        }
+
+        private static void DisplayGuessedWord(List<string> guessedWord)
+        {
+            if (guessedWord.Count > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("\nYou have guessed on the following words");
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+
+                foreach (string word in guessedWord)
+                {
+                    Console.WriteLine(word);
+                }
+            }
+            Console.ResetColor();
+        }
+
+        private static void SaveGuessedWordsToWordlist(List<string> guessedWord, List<string> wordList)
+        {
+            if (guessedWord.Count > 0)
+            {
+                foreach (string word in guessedWord)
+                {
+                    if (!wordList.Contains(word))//If guessed word isn't in list of word ask to add them
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        if (GetValidLetters($"{word} isn't in the list of word. Do you want to add it (y/n) :", "yYnN") == "Y")
+                        {
+                            wordList.Add(word);
+                        }
+                    }
+
+                }
+            }
+
+        }
+        private static string GetSecretWord(List<string> wordList)
+        {
+            if (wordList.Count == 0) //If no words in list additems.
+            {
+                wordList.AddRange(new string[] { "ANANAS", "AX", "SWIXWAX", "MISSISSIPI" });
+            }
+            Random rand = new Random();
+            string secretWord = wordList[rand.Next(0, wordList.Count)];
+            return secretWord;
+        }
+
+        private static void DisplayWinLoss(int guesses)
+        {
+            DisplayHangman(guesses);
+            if (guesses > 9)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine("Sorry, This didn't go that well.");
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine("Congratulation, You did it with {0} guess{1}", guesses, (guesses > 1) ? "es" : ". Did you cheat?");
+            }
+            Console.ResetColor();
+        }
+
+        private static string GetValidLetters(string message, string validLetters)
         {
             char inpKey;
-            string validLetters = "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ";
             string inpString = "";
-            Console.Write("{0}: ", message);
+            Console.Write("\n{0}: ", message);
             do
             {
                 inpKey = Console.ReadKey(true).KeyChar;
                 if (validLetters.Contains(inpKey)) //Check for valid input
                 {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
                     Console.Write(inpKey);
                     inpString = inpString + inpKey;
                 }
@@ -96,7 +196,7 @@ namespace Hangman
                     if (inpKey != '\r') //Check for Enter in inkey otherwise wrong input
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("\nI don't think '{0}' is a letter. Try Again", inpKey);
+                        Console.WriteLine("\nDon't think '{0}' is a letter. Try Again", inpKey);
                         Console.ResetColor();
                     }
                 }
