@@ -15,7 +15,7 @@ namespace Hangman
             {
                 GoHangman(wordList);
             }
-            while (GetValidLetters("Do you want to play again? (y/n) ", "yYnN") == "Y");
+            while (GetValidLetters("Do you want to play again? (y/n)", "yYnN") == "Y");
         }
         private static void GoHangman(List<string> wordList)
         {
@@ -26,16 +26,11 @@ namespace Hangman
             int guesses = 0;
             bool validGuess = false;
             string inpString;
-            DisplayHangman(0);
-            Console.WriteLine("{0}", secretWord);
             do
             {
-                DisplayHangman(guesses);
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine(displayWordCharArray);
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                DisplayHangman(guesses,displayWordCharArray);
 
-                DisplayGuessedLetters("\nThis is guess number ",$"{guesses + 1}", $"{guesses + 1}");
+               Console.WriteLine("\nThis is try number "+(guesses+1));
                 if (guessedLetters.Length > 0)
                 {
                     DisplayGuessedLetters("\nYou have guessed on letters ", guessedLetters, secretWord);
@@ -83,15 +78,21 @@ namespace Hangman
                         MessageAndDelay("Sorry wrong word but it was a nice try!");
                         validGuess = true; //count the guess
                     }
+                    else
+                    {
+                        displayWordCharArray = inpString.ToCharArray();
+                    }
                 }
                 if (validGuess) //increase guess
                 {
                     guesses++;
                 }
-            } while ((secretWord != string.Concat(displayWordCharArray)) && guesses < 10);//End when displayWordCharArray is all letters and equal with secret word or guesses reached 10.
+ 
+            } 
+            while ((secretWord != inpString) && (secretWord != string.Concat(displayWordCharArray)) && (guesses < 10));//End when displayWordCharArray is all letters and equal with secret word or guesses reached 10.
+            DisplayHangman(guesses, displayWordCharArray);
             DisplayWinLoss(guesses); //Show the result of the game
             SaveGuessedWordsToWordlist(guessedWord, wordList); // Give option to add words.
-
         }
 
         private static void DisplayGuessedLetters(string v, string guessedLetters, string secretWord)
@@ -140,7 +141,7 @@ namespace Hangman
                     if (!wordList.Contains(word))//If guessed word isn't in list of word ask to add them
                     {
                         Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        if (GetValidLetters($"{word} isn't in the list of word. Do you want to add it (y/n) :", "yYnN") == "Y")
+                        if (GetValidLetters($"{word} isn't in the list of word. Do you want to add it (y/n)", "yYnN") == "Y")
                         {
                             wordList.Add(word);
                         }
@@ -163,7 +164,7 @@ namespace Hangman
 
         private static void DisplayWinLoss(int guesses)
         {
-            DisplayHangman(guesses);
+            
             if (guesses > 9)
             {
                 Console.ForegroundColor = ConsoleColor.DarkRed;
@@ -172,7 +173,7 @@ namespace Hangman
             else
             {
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine("Congratulation, You did it with {0} guess{1}", guesses, (guesses > 1) ? "es" : ". Did you cheat?");
+                Console.WriteLine("Congratulation, You did it with {0} fail{1}", guesses, (guesses > 1) ? "s" : ". Did you cheat?");
             }
             Console.ResetColor();
         }
@@ -205,7 +206,7 @@ namespace Hangman
             return inpString.ToUpper(); //Return Uppercase input
         }
 
-        private static void DisplayHangman(int guesses) //Not needed but more fun ;-)
+        private static void DisplayHangman(int guesses, char[] displayWordCharArray) //Not needed but more fun ;-)
         {
 
             Console.Clear();
@@ -291,7 +292,9 @@ namespace Hangman
                     break;
             }
             Console.WriteLine();
-            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine(displayWordCharArray);
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
         }
 
     }
